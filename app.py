@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify, render_template
+from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 from rembg import remove, new_session
 from PIL import Image
@@ -104,7 +104,7 @@ class RembgAPIService:
         final_memory = self.get_memory_info()
         logger.info(f"💾 Nach Model-Loading: {final_memory.get('used_percent', 'N/A')}% RAM verwendet")
     
-    def process_image(self, image_file, model_name='u2net', max_size=2000):  # Größere Bilder für Pro Plan
+    def process_image(self, image_file, model_name='u2net', max_size=2000):
         """Bild verarbeiten - optimiert für Pro Plan Ressourcen"""
         start_time = time.time()
         
@@ -176,336 +176,6 @@ class RembgAPIService:
 # Service-Instanz erstellen
 rembg_service = RembgAPIService()
 
-@app.route('/test', methods=['GET'])
-def test_interface():
-    """HTML Test-Interface ohne externe Templates"""
-    return f'''
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Railway REMBG API Test</title>
-    <style>
-        body {{
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-        }}
-        .container {{
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }}
-        .header {{
-            text-align: center;
-            margin-bottom: 30px;
-        }}
-        .header h1 {{
-            color: #333;
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }}
-        .api-status {{
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-left: 4px solid #28a745;
-        }}
-        .upload-section {{
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 25px;
-            margin-bottom: 25px;
-        }}
-        .upload-area {{
-            border: 3px dashed #667eea;
-            border-radius: 10px;
-            padding: 30px;
-            text-align: center;
-            margin-bottom: 20px;
-            transition: all 0.3s ease;
-        }}
-        .upload-area:hover {{
-            border-color: #764ba2;
-            background: rgba(102, 126, 234, 0.05);
-        }}
-        .btn {{
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-size: 1rem;
-            cursor: pointer;
-            margin: 5px;
-            transition: transform 0.2s;
-        }}
-        .btn:hover {{
-            transform: translateY(-2px);
-        }}
-        .btn-success {{
-            background: linear-gradient(45deg, #28a745, #20c997);
-        }}
-        .settings {{
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-        }}
-        .setting-group label {{
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            color: #333;
-        }}
-        .setting-group select, .setting-group input {{
-            width: 100%;
-            padding: 8px;
-            border: 2px solid #e9ecef;
-            border-radius: 6px;
-            font-size: 1rem;
-        }}
-        .result {{
-            margin-top: 25px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #17a2b8;
-        }}
-        .hidden {{
-            display: none;
-        }}
-        .loading {{
-            color: #6c757d;
-        }}
-        .success {{
-            color: #28a745;
-        }}
-        .error {{
-            color: #dc3545;
-        }}
-        @media (max-width: 768px) {{
-            .settings {{
-                grid-template-columns: 1fr;
-            }}
-            .header h1 {{
-                font-size: 1.8rem;
-            }}
-        }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🚀 Railway REMBG API</h1>
-            <p>Background Removal API Test - Railway Pro Plan</p>
-        </div>
-        
-        <div class="api-status" id="apiStatus">
-            <strong>🔄 Loading API Status...</strong>
-        </div>
-        
-        <div class="upload-section">
-            <div class="upload-area">
-                <h3>📁 Bild für Background-Removal auswählen</h3>
-                <input type="file" id="fileInput" accept="image/*" style="margin: 10px 0;">
-                <p style="color: #666; font-size: 0.9rem;">Unterstützte Formate: JPG, PNG, WebP, TIFF</p>
-            </div>
-            
-            <div class="settings">
-                <div class="setting-group">
-                    <label for="modelSelect">🤖 AI-Modell:</label>
-                    <select id="modelSelect">
-                        <option value="u2net">u2net (Standard - beste Balance)</option>
-                        <option value="silueta">silueta (Schnell - 43MB)</option>
-                        <option value="u2net_human_seg">u2net_human_seg (Für Menschen)</option>
-                        <option value="isnet-general-use">isnet-general-use (Neueste Version)</option>
-                    </select>
-                </div>
-                
-                <div class="setting-group">
-                    <label for="maxSizeSelect">📏 Max. Bildgröße:</label>
-                    <select id="maxSizeSelect">
-                        <option value="1500">1500px (Standard)</option>
-                        <option value="2000" selected>2000px (Pro Plan)</option>
-                        <option value="3000">3000px (Pro Plan+)</option>
-                        <option value="4000">4000px (4K)</option>
-                    </select>
-                </div>
-            </div>
-            
-            <button class="btn btn-success" onclick="processImage()" style="width: 100%; padding: 15px;">
-                🎨 Hintergrund entfernen
-            </button>
-        </div>
-        
-        <div id="result" class="result hidden">
-            <h3>📊 Ergebnis:</h3>
-            <div id="resultContent"></div>
-        </div>
-    </div>
-
-    <script>
-        const API_BASE = window.location.origin;
-        
-        // API Status beim Laden prüfen
-        window.addEventListener('load', checkAPIStatus);
-        
-        async function checkAPIStatus() {{
-            try {{
-                const response = await fetch(`${{API_BASE}}/`);
-                const data = await response.json();
-                
-                document.getElementById('apiStatus').innerHTML = `
-                    <strong>✅ API Online</strong><br>
-                    Service: ${{data.service}} v${{data.version}}<br>
-                    Plan: ${{data.powered_by}}<br>
-                    Verfügbare Modelle: ${{data.available_models.join(', ')}}<br>
-                    RAM: ${{data.system_info.total_memory_gb}}GB (${{data.system_info.memory_usage_percent}}% verwendet)
-                `;
-            }} catch (error) {{
-                document.getElementById('apiStatus').innerHTML = `
-                    <strong style="color: red;">❌ API nicht erreichbar</strong><br>
-                    Fehler: ${{error.message}}
-                `;
-            }}
-        }}
-        
-        async function processImage() {{
-            const fileInput = document.getElementById('fileInput');
-            const modelSelect = document.getElementById('modelSelect');
-            const maxSizeSelect = document.getElementById('maxSizeSelect');
-            const resultDiv = document.getElementById('result');
-            const resultContent = document.getElementById('resultContent');
-            
-            if (!fileInput.files[0]) {{
-                alert('Bitte zuerst ein Bild auswählen!');
-                return;
-            }}
-            
-            const model = modelSelect.value;
-            const maxSize = maxSizeSelect.value;
-            
-            const formData = new FormData();
-            formData.append('image', fileInput.files[0]);
-            formData.append('model', model);
-            formData.append('max_size', maxSize);
-            
-            resultContent.innerHTML = `<div class="loading">⏳ Verarbeite Bild mit ${{model}}-Modell...</div>`;
-            resultDiv.classList.remove('hidden');
-            
-            const startTime = Date.now();
-            
-            try {{
-                const response = await fetch(`${{API_BASE}}/remove-bg`, {{
-                    method: 'POST',
-                    body: formData
-                }});
-                
-                const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-                
-                if (!response.ok) {{
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || `HTTP ${{response.status}}`);
-                }}
-                
-                const blob = await response.blob();
-                const imageUrl = URL.createObjectURL(blob);
-                
-                // Ergebnis anzeigen
-                const apiProcessingTime = response.headers.get('X-Processing-Time') || `${{processingTime}}s`;
-                const usedModel = response.headers.get('X-Model-Used') || model;
-                const fileSize = (blob.size / 1024).toFixed(0);
-                
-                resultContent.innerHTML = `
-                    <div class="success">
-                        <p><strong>✅ Erfolgreich verarbeitet!</strong></p>
-                        <p><strong>Modell:</strong> ${{usedModel}}</p>
-                        <p><strong>Verarbeitungszeit:</strong> ${{apiProcessingTime}}</p>
-                        <p><strong>Total Zeit:</strong> ${{processingTime}}s</p>
-                        <p><strong>Dateigröße:</strong> ${{fileSize}} KB</p>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
-                        <div>
-                            <h4>🖼️ Original:</h4>
-                            <img src="${{URL.createObjectURL(fileInput.files[0])}}" 
-                                 style="max-width: 100%; border: 1px solid #ddd; border-radius: 5px;">
-                        </div>
-                        <div>
-                            <h4>✨ Ohne Hintergrund:</h4>
-                            <img src="${{imageUrl}}" 
-                                 style="max-width: 100%; border: 1px solid #ddd; border-radius: 5px; 
-                                        background: repeating-conic-gradient(#808080 0% 25%, transparent 0% 50%) 50% / 20px 20px;">
-                        </div>
-                    </div>
-                    <a href="${{imageUrl}}" download="freigestellt.png" class="btn" style="text-decoration: none;">
-                        💾 Bild herunterladen
-                    </a>
-                `;
-                
-            }} catch (error) {{
-                resultContent.innerHTML = `
-                    <div class="error">
-                        <p><strong>❌ Verarbeitungsfehler:</strong></p>
-                        <p>${{error.message}}</p>
-                        <p><em>Versuche ein kleineres Bild oder ein anderes Modell.</em></p>
-                    </div>
-                `;
-            }}
-        }}
-    </script>
-</body>
-</html>
-    '''
-
-@app.route('/demo', methods=['GET'])  
-def demo_page():
-    """Demo-Seite - leitet zu Test-Interface weiter"""
-    return f'''
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Railway REMBG API Demo</title>
-    <meta http-equiv="refresh" content="0; url=/test">
-    <style>
-        body {{
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }}
-        .redirect-card {{
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }}
-    </style>
-</head>
-<body>
-    <div class="redirect-card">
-        <h2>🚀 Demo wird geladen...</h2>
-        <p>Du wirst zum Test-Interface weitergeleitet.</p>
-        <p><a href="/test">Klicke hier, falls die Weiterleitung nicht funktioniert</a></p>
-    </div>
-</body>
-</html>
-
 @app.route('/', methods=['GET'])
 def health_check():
     """Health Check und API-Info mit dynamischer Plan-Erkennung"""
@@ -527,7 +197,9 @@ def health_check():
             "batch_process": "/batch",
             "models": "/models",
             "health": "/",
-            "system": "/system"
+            "system": "/system",
+            "test_interface": "/test",
+            "demo_page": "/demo"
         },
         "usage": {
             "single_image": "POST /remove-bg with 'image' file",
@@ -541,6 +213,261 @@ def health_check():
             "max_resolution": "Pro Plan: 4K+ | Hobby Plan: 1500px"
         }
     })
+
+@app.route('/test', methods=['GET'])
+def test_interface():
+    """Einfaches Test-Interface ohne komplexes HTML"""
+    return '''
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway REMBG API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .upload-area {
+            border: 2px dashed #007bff;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .settings {
+            margin: 20px 0;
+        }
+        .settings label {
+            display: block;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+        .settings select, .settings input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .hidden {
+            display: none;
+        }
+        .api-status {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Railway REMBG API Test</h1>
+            <p>Background Removal API - Railway Pro Plan</p>
+        </div>
+        
+        <div class="api-status" id="apiStatus">
+            🔄 Loading API status...
+        </div>
+        
+        <div class="upload-area">
+            <h3>📁 Bild hochladen</h3>
+            <input type="file" id="fileInput" accept="image/*">
+            <p style="color: #666; font-size: 0.9rem;">Unterstützte Formate: JPG, PNG, WebP, TIFF</p>
+        </div>
+        
+        <div class="settings">
+            <label for="modelSelect">🤖 AI-Modell:</label>
+            <select id="modelSelect">
+                <option value="u2net">u2net (Standard)</option>
+                <option value="silueta">silueta (Schnell)</option>
+                <option value="u2net_human_seg">u2net_human_seg (Menschen)</option>
+                <option value="isnet-general-use">isnet-general-use (Neu)</option>
+            </select>
+            
+            <label for="maxSizeSelect">📏 Max. Bildgröße:</label>
+            <select id="maxSizeSelect">
+                <option value="1500">1500px</option>
+                <option value="2000" selected>2000px (Pro Plan)</option>
+                <option value="3000">3000px</option>
+                <option value="4000">4000px (4K)</option>
+            </select>
+        </div>
+        
+        <button class="btn" onclick="processImage()" style="width: 100%; padding: 15px; font-size: 1.1rem;">
+            🎨 Hintergrund entfernen
+        </button>
+        
+        <div id="result" class="result hidden">
+            <h3>📊 Ergebnis:</h3>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        // API Status laden
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(API_BASE + '/');
+                const data = await response.json();
+                
+                document.getElementById('apiStatus').innerHTML = 
+                    '✅ <strong>API Online</strong><br>' +
+                    'Service: ' + data.service + ' v' + data.version + '<br>' +
+                    'Plan: ' + data.powered_by + '<br>' +
+                    'RAM: ' + data.system_info.total_memory_gb + 'GB';
+            } catch (error) {
+                document.getElementById('apiStatus').innerHTML = 
+                    '❌ <strong>API Status Error:</strong> ' + error.message;
+            }
+        });
+        
+        async function processImage() {
+            const fileInput = document.getElementById('fileInput');
+            const modelSelect = document.getElementById('modelSelect');
+            const maxSizeSelect = document.getElementById('maxSizeSelect');
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            if (!fileInput.files[0]) {
+                alert('Bitte zuerst ein Bild auswählen!');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+            formData.append('model', modelSelect.value);
+            formData.append('max_size', maxSizeSelect.value);
+            
+            resultContent.innerHTML = '⏳ Verarbeite Bild mit ' + modelSelect.value + '-Modell...';
+            resultDiv.classList.remove('hidden');
+            
+            const startTime = Date.now();
+            
+            try {
+                const response = await fetch(API_BASE + '/remove-bg', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'HTTP ' + response.status);
+                }
+                
+                const blob = await response.blob();
+                const imageUrl = URL.createObjectURL(blob);
+                
+                const apiTime = response.headers.get('X-Processing-Time') || processingTime + 's';
+                const usedModel = response.headers.get('X-Model-Used') || modelSelect.value;
+                const fileSize = (blob.size / 1024).toFixed(0);
+                
+                resultContent.innerHTML = 
+                    '<p><strong>✅ Erfolgreich verarbeitet!</strong></p>' +
+                    '<p><strong>Modell:</strong> ' + usedModel + '</p>' +
+                    '<p><strong>Verarbeitungszeit:</strong> ' + apiTime + '</p>' +
+                    '<p><strong>Total:</strong> ' + processingTime + 's</p>' +
+                    '<p><strong>Dateigröße:</strong> ' + fileSize + ' KB</p>' +
+                    '<div style="margin: 20px 0;">' +
+                        '<img src="' + imageUrl + '" style="max-width: 100%; border: 1px solid #ddd; border-radius: 5px;">' +
+                    '</div>' +
+                    '<a href="' + imageUrl + '" download="freigestellt.png" class="btn">💾 Herunterladen</a>';
+                
+            } catch (error) {
+                resultContent.innerHTML = 
+                    '<p><strong>❌ Fehler:</strong></p>' +
+                    '<p>' + error.message + '</p>' +
+                    '<p><em>Versuche ein kleineres Bild oder anderes Modell.</em></p>';
+            }
+        }
+    </script>
+</body>
+</html>
+    '''
+
+@app.route('/demo', methods=['GET'])  
+def demo_page():
+    """Demo-Seite - leitet zu Test weiter"""
+    return '''
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Railway REMBG API Demo</title>
+    <meta http-equiv="refresh" content="0; url=/test">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>🚀 Demo wird geladen...</h2>
+        <p>Weiterleitung zum Test-Interface...</p>
+        <p><a href="/test">Hier klicken falls keine Weiterleitung</a></p>
+    </div>
+</body>
+</html>
+    '''
 
 @app.route('/system', methods=['GET'])
 def system_info():
