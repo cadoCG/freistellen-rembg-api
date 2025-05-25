@@ -1,4 +1,4 @@
-from flask import Flask, request, send_file, jsonify
+from flask import Flask, request, send_file, jsonify, render_template
 from flask_cors import CORS
 from rembg import remove, new_session
 from PIL import Image
