@@ -11,6 +11,7 @@ from functools import lru_cache
 
 # Flask App initialisieren
 app = Flask(__name__)
+CORS(app)
 
 # Logging konfigurieren
 logging.basicConfig(
