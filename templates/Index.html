@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway API Tester - Background Removal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .api-status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: rgba(102, 126, 234, 0.05);
+        }
+        
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+        }
+        
+        .upload-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .setting-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .setting-group select {
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .process-btn {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(40, 167, 69, 0.3);
+        }
+        
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .result-item {
+            text-align: center;
+        }
+        
+        .result-item h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .image-container {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 10px;
+            background: #fff;
+        }
+        
+        .result-image {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+        }
+        
+        .processed-image {
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(-45deg, #ccc 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #ccc 75%), 
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        
+        .download-btn {
+            background: linear-gradient(45deg, #dc3545, #e91e63);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            margin-top: 15px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .settings {
+                grid-template-columns: 1fr;
+            }
+            
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Railway API Tester</h1>
+            <p>Background Removal API - Powered by Railway Pro Plan</p>
+        </div>
+        
+        <div class="api-status" id="apiStatus">
+            <strong>🔄 Lade API-Status...</strong>
+        </div>
+        
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <div id="uploadContent">
+                    <h3>📁 Bild hier ablegen oder klicken zum Auswählen</h3>
+                    <p>Unterstützte Formate: JPG, PNG, WebP, TIFF</p>
+                    <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                        📷 Bild auswählen
+                    </button>
+                </div>
+            </div>
+            
+            <div class="settings">
+                <div class="setting-group">
+                    <label for="modelSelect">🤖 AI-Modell:</label>
+                    <select id="modelSelect">
+                        <option value="u2net">u2net (Standard - beste Balance)</option>
+                        <option value="silueta">silueta (Schnell - 43MB)</option>
+                        <option value="u2net_human_seg">u2net_human_seg (Für Menschen)</option>
+                        <option value="isnet-general-use">isnet-general-use (Neueste Version)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="maxSizeSelect">📏 Max. Bildgröße:</label>
+                    <select id="maxSizeSelect">
+                        <option value="1500">1500px (Hobby Plan)</option>
+                        <option value="2000" selected>2000px (Pro Plan)</option>
+                        <option value="3000">3000px (Pro Plan+)</option>
+                        <option value="4000">4000px (4K)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="process-btn" id="processBtn" disabled>
+                🎨 Hintergrund entfernen
+            </button>
+        </div>
+        
+        <div id="statusMessage" class="hidden"></div>
+        
+        <div class="results hidden" id="resultsSection">
+            <h2>📊 Ergebnisse</h2>
+            <div class="result-grid">
+                <div class="result-item">
+                    <h3>🖼️ Original</h3>
+                    <div class="image-container">
+                        <img id="originalImage" class="result-image" alt="Original">
+                    </div>
+                </div>
+                
+                <div class="result-item">
+                    <h3>✨ Ohne Hintergrund</h3>
+                    <div class="image-container processed-image">
+                        <img id="processedImage" class="result-image" alt="Processed">
+                    </div>
+                    <a id="downloadLink" class="download-btn hidden" download="freigestellt.png">
+                        💾 Herunterladen
+                    </a>
+                </div>
+            </div>
+            
+            <div id="processingInfo" class="status-message status-success hidden">
+                <strong>⚡ Verarbeitung erfolgreich!</strong><br>
+                <span id="processingDetails"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin; // Verwendet die gleiche Domain
+        let selectedFile = null;
+        
+        // API-Status beim Laden prüfen
+        window.addEventListener('load', checkAPIStatus);
+        
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                document.getElementById('apiStatus').innerHTML = `
+                    <strong>✅ API Online</strong><br>
+                    Service: ${data.service} v${data.version}<br>
+                    Plan: ${data.powered_by}<br>
+                    Verfügbare Modelle: ${data.available_models.join(', ')}<br>
+                    RAM: ${data.system_info.total_memory_gb}GB (${data.system_info.memory_usage_percent}% verwendet)
+                `;
+            } catch (error) {
+                document.getElementById('apiStatus').innerHTML = `
+                    <strong style="color: red;">❌ API nicht erreichbar</strong><br>
+                    Fehler: ${error.message}
+                `;
+                document.getElementById('apiStatus').style.borderLeftColor = '#dc3545';
+            }
+        }
+        
+        // File Input Handler
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        
+        // Drag & Drop Handler
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect({ target: { files } });
+            }
+        });
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            selectedFile = file;
+            
+            // File-Info anzeigen
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+            document.getElementById('uploadContent').innerHTML = `
+                <h3>📁 Datei ausgewählt:</h3>
+                <p><strong>${file.name}</strong> (${fileSize} MB)</p>
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                    🔄 Andere Datei wählen
+                </button>
+            `;
+            
+            // Original-Bild Vorschau
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('originalImage').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            // Process-Button aktivieren
+            document.getElementById('processBtn').disabled = false;
+        }
+        
+        // Process Button Handler
+        document.getElementById('processBtn').addEventListener('click', processImage);
+        
+        async function processImage() {
+            if (!selectedFile) {
+                showStatus('error', '❌ Bitte zuerst ein Bild auswählen!');
+                return;
+            }
+            
+            const model = document.getElementById('modelSelect').value;
+            const maxSize = document.getElementById('maxSizeSelect').value;
+            
+            // UI für Loading-State
+            document.getElementById('processBtn').disabled = true;
+            document.getElementById('processBtn').innerHTML = `
+                <span class="loading-spinner"></span>Verarbeite mit ${model}...
+            `;
+            
+            showStatus('loading', `🤖 Verarbeite Bild mit ${model}-Modell...`);
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', selectedFile);
+                formData.append('model', model);
+                formData.append('max_size', maxSize);
+                
+                const startTime = Date.now();
+                
+                const response = await fetch(`${API_BASE}/remove-bg`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP ${response.status}`);
+                }
+                
+                // Processed Image als Blob
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+                
+                // Ergebnis anzeigen
+                document.getElementById('processedImage').src = imageUrl;
+                document.getElementById('downloadLink').href = imageUrl;
+                document.getElementById('downloadLink').classList.remove('hidden');
+                document.getElementById('resultsSection').classList.remove('hidden');
+                
+                // Processing-Info
+                const apiProcessingTime = response.headers.get('X-Processing-Time') || `${processingTime}s`;
+                const usedModel = response.headers.get('X-Model-Used') || model;
+                
+                document.getElementById('processingDetails').innerHTML = `
+                    Modell: <strong>${usedModel}</strong><br>
+                    Verarbeitungszeit: <strong>${apiProcessingTime}</strong><br>
+                    Upload + Download: <strong>${processingTime}s</strong><br>
+                    Dateigröße: <strong>${(imageBlob.size / 1024).toFixed(0)} KB</strong>
+                `;
+                document.getElementById('processingInfo').classList.remove('hidden');
+                
+                showStatus('success', `✅ Erfolgreich verarbeitet in ${processingTime}s!`);
+                
+            } catch (error) {
+                console.error('Processing Error:', error);
+                showStatus('error', `❌ Verarbeitungsfehler: ${error.message}`);
+            } finally {
+                // UI zurücksetzen
+                document.getElementById('processBtn').disabled = false;
+                document.getElementById('processBtn').innerHTML = '🎨 Hintergrund entfernen';
+            }
+        }
+        
+        function showStatus(type, message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.className = `status-message status-${type}`;
+            statusEl.innerHTML = message;
+            statusEl.classList.remove('hidden');
+            
+            // Auto-hide nach 5 Sekunden bei Success
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusEl.classList.add('hidden');
+                }, 5000);
+            }
+        }
+    </script>
+</body>
+</html>
