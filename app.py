@@ -10,16 +10,6 @@ import gc
 import psutil
 from functools import lru_cache
 
-@app.route('/test', methods=['GET'])
-def test_interface():
-    """HTML Test-Interface für die API"""
-    return render_template('index.html')
-
-@app.route('/demo', methods=['GET'])  
-def demo_page():
-    """Alternative Demo-Seite"""
-    return render_template('index.html')
-
 # Flask App initialisieren
 app = Flask(__name__)
 CORS(app)
@@ -185,6 +175,16 @@ class RembgAPIService:
 
 # Service-Instanz erstellen
 rembg_service = RembgAPIService()
+
+@app.route('/test', methods=['GET'])
+def test_interface():
+    """HTML Test-Interface für die API"""
+    return render_template('index.html')
+
+@app.route('/demo', methods=['GET'])  
+def demo_page():
+    """Alternative Demo-Seite"""
+    return render_template('index.html')
 
 @app.route('/', methods=['GET'])
 def health_check():
