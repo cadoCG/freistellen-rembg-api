@@ -1,18 +1,8 @@
-# REMBG Background Removal API - Requirements
-# Kompatible Versionen für Railway
-
-# Core REMBG Dependencies (ohne Version-Pinning)
+txt
 rembg[new]
-
-# Web Framework
 flask==3.0.0
+flask-cors
 gunicorn==21.2.0
-
-# Image Processing - kompatible Version
 pillow>=10.0.0,<11.0.0
-
-# AI/ML Runtime - flexible Version
 onnxruntime>=1.15.0
-
-# System Monitoring
 psutil
